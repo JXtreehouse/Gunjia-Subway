@@ -17,6 +17,8 @@ function init(c){
     this.b2Prop=c.b2Prop;
     this.b3Prop=c.b3Prop;
     
+    this.exitPropValue=c.exitPropValue;
+    
     this.signBoard=c.signBoard;
     this.outdoorClassName=c.signBoard+" "+c.outdoorProp;
     this.b1ClassName=c.signBoard+" "+c.b1Prop;
@@ -24,6 +26,18 @@ function init(c){
     this.b3ClassName=c.signBoard+" "+c.b3Prop;
     this.mark_blue=c.mark_blue;
     this.mark_yellow=c.mark_yellow;
+}
+function setFPS() {
+    var camControls = new THREE.FirstPersonControls(camera);
+    camControls.lookSpeed = 0.4;
+    camControls.movementSpeed = 20;
+    camControls.noFly = true;
+    camControls.lookVertical = true;
+    camControls.constrainVertical = true;
+    camControls.verticalMin = 1.0;
+    camControls.verticalMax = 2.0;
+    camControls.lon = -150;
+    camControls.lat = 120;
 }
 
 window.onload = function () {
@@ -187,12 +201,13 @@ function EnterBuilding() {
     HideAllPanels();
     ShowOrHideObjects( app.outdoors, false );
     ShowOrHideObjects( app.buildings[0].floors, true);
-    bPOS = app.buildings[0].position;
-    app.camera.flyTo({
-        position: [bPOS[0]+80, bPOS[1]+101, bPOS[2]-80],
-        target: [bPOS[0],bPOS[1], bPOS[2]],
-        time: 1000
-    });
+    // bPOS = app.buildings[0].position;
+    // app.camera.flyTo({
+    //     position: [bPOS[0]+80, bPOS[1]+101, bPOS[2]-80],
+    //     target: [bPOS[0],bPOS[1], bPOS[2]],
+    //     time: 1000
+    // });
+    app.camera.flyTo({target:app.buildings[0]});
 }
 function EnterFloor( number ) {
     ChangeBG( false );
@@ -201,12 +216,13 @@ function EnterFloor( number ) {
     ShowOrHideObjects( app.outdoors, false );
     ShowThisFloor( app.buildings[0].floors, number - 1 );
     ShowThisPanels( number );
-    fPOS = app.buildings[0].floors[number-1].position;
-    app.camera.flyTo({
-        position: [fPOS[0]+80, fPOS[1]+101+ number * 1, fPOS[2]-80],
-        target: [fPOS[0],fPOS[1], fPOS[2]],
-        time: 1000
-    });
+    // fPOS = app.buildings[0].floors[number-1].position;
+    // app.camera.flyTo({
+    //     position: [fPOS[0]+80, fPOS[1]+101+ number * 1, fPOS[2]-80],
+    //     target: [fPOS[0],fPOS[1], fPOS[2]],
+    //     time: 1000
+    // });
+    app.camera.flyTo({target:app.buildings[0].floors[number-1]});
 }
 
 function EnterOutdoor() {
@@ -217,12 +233,13 @@ function EnterOutdoor() {
     ShowOrHideObjects( app.buildings[0].floors, false);
     ShowThisPanels(0);
 
-    oPOS = app.outdoors.position;
-    app.camera.flyTo({
-        position: [oPOS[0]-200, oPOS[1]+101, oPOS[2]+100],
-        target: [oPOS[0], oPOS[1], oPOS[2]],
-        time: 1000
-    });
+    // oPOS = app.outdoors.position;
+    // app.camera.flyTo({
+    //     position: [oPOS[0]-200, oPOS[1]+101, oPOS[2]+100],
+    //     target: [oPOS[0], oPOS[1], oPOS[2]],
+    //     time: 1000
+    // });
+    app.camera.flyTo({target:app.outdoors});
 }
 function ChangeBG( bSkyBox ) {
     if(bSkyBox){
@@ -254,6 +271,8 @@ function isArray(o){
 }
 /* 得到属性名/属性值索引的数组 */
 function GetThingsByProp( prop ) {
-    var _things = app.query({propKey:prop,propValue:this.exitPropValue});
+    console.log('[propKey='+prop+',propValue='+this.exitPropValue+']');
+    // var _things = app.query(/*'[propKey='+prop+']'*/{propKey:prop,propValue:this.exitPropValue}/*).query('[propValue='+this.exitPropValue+']'*/);
+    var _things = app.query('[propKey='+prop+']').query('[propValue='+this.exitPropValue+']');
     return _things;
 }
