@@ -69,7 +69,7 @@ canvas {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#575757', endColorstr='#888888');
   }
 }
-.signboard1 {
+.signboard_subway {
   width: 120px;
   position: absolute;
   top: 0;

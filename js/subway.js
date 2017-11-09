@@ -6,7 +6,7 @@ var config = {
     b3Prop:"b3",
     exitPropValue:"exit",
     
-    signBoard:"signboard1",
+    signBoard:"signboard_subway",
     
     mark_blue:"mark_blue",
     mark_yellow:"mark_yellow"
@@ -201,13 +201,13 @@ function EnterBuilding() {
     HideAllPanels();
     ShowOrHideObjects( app.outdoors, false );
     ShowOrHideObjects( app.buildings[0].floors, true);
-    // bPOS = app.buildings[0].position;
-    // app.camera.flyTo({
-    //     position: [bPOS[0]+80, bPOS[1]+101, bPOS[2]-80],
-    //     target: [bPOS[0],bPOS[1], bPOS[2]],
-    //     time: 1000
-    // });
-    app.camera.flyTo({target:app.buildings[0]});
+    bPOS = app.buildings[0].position;
+    app.camera.flyTo({
+        position: [bPOS[0]+80, bPOS[1]+101, bPOS[2]-80],
+        target: [bPOS[0],bPOS[1], bPOS[2]],
+        time: 1000
+    });
+    // app.camera.flyTo({target:app.buildings[0]});
 }
 function EnterFloor( number ) {
     ChangeBG( false );
@@ -216,13 +216,13 @@ function EnterFloor( number ) {
     ShowOrHideObjects( app.outdoors, false );
     ShowThisFloor( app.buildings[0].floors, number - 1 );
     ShowThisPanels( number );
-    // fPOS = app.buildings[0].floors[number-1].position;
-    // app.camera.flyTo({
-    //     position: [fPOS[0]+80, fPOS[1]+101+ number * 1, fPOS[2]-80],
-    //     target: [fPOS[0],fPOS[1], fPOS[2]],
-    //     time: 1000
-    // });
-    app.camera.flyTo({target:app.buildings[0].floors[number-1]});
+    fPOS = app.buildings[0].floors[number-1].position;
+    app.camera.flyTo({
+        position: [fPOS[0]+80, fPOS[1]+101+ number * 1, fPOS[2]-80],
+        target: [fPOS[0],fPOS[1], fPOS[2]],
+        time: 1000
+    });
+    // app.camera.flyTo({target:app.buildings[0].floors[number-1]});
 }
 
 function EnterOutdoor() {
@@ -233,13 +233,13 @@ function EnterOutdoor() {
     ShowOrHideObjects( app.buildings[0].floors, false);
     ShowThisPanels(0);
 
-    // oPOS = app.outdoors.position;
-    // app.camera.flyTo({
-    //     position: [oPOS[0]-200, oPOS[1]+101, oPOS[2]+100],
-    //     target: [oPOS[0], oPOS[1], oPOS[2]],
-    //     time: 1000
-    // });
-    app.camera.flyTo({target:app.outdoors});
+    oPOS = app.outdoors.position;
+    app.camera.flyTo({
+        position: [oPOS[0]-200, oPOS[1]+101, oPOS[2]+100],
+        target: [oPOS[0], oPOS[1], oPOS[2]],
+        time: 1000
+    });
+    // app.camera.flyTo({target:app.outdoors});
 }
 function ChangeBG( bSkyBox ) {
     if(bSkyBox){
@@ -270,9 +270,10 @@ function isArray(o){
     return Object.prototype.toString.call(o) === '[object Array]';
 }
 /* 得到属性名/属性值索引的数组 */
-function GetThingsByProp( prop ) {
-    console.log('[propKey='+prop+',propValue='+this.exitPropValue+']');
+function GetThingsByProp( propKey ) {
+    // console.log('[propKey='+prop+',propValue='+this.exitPropValue+']');
     // var _things = app.query(/*'[propKey='+prop+']'*/{propKey:prop,propValue:this.exitPropValue}/*).query('[propValue='+this.exitPropValue+']'*/);
-    var _things = app.query('[propKey='+prop+']').query('[propValue='+this.exitPropValue+']');
+    // console.log(app.query('['+propKey+'='+propValue+']'));
+    var _things = app.query('['+propKey+'='+this.exitPropValue+']')/*.query('[propValue='+this.exitPropValue+']')*/;
     return _things;
 }
