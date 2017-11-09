@@ -27,18 +27,6 @@ function init(c){
     this.mark_blue=c.mark_blue;
     this.mark_yellow=c.mark_yellow;
 }
-function setFPS() {
-    var camControls = new THREE.FirstPersonControls(camera);
-    camControls.lookSpeed = 0.4;
-    camControls.movementSpeed = 20;
-    camControls.noFly = true;
-    camControls.lookVertical = true;
-    camControls.constrainVertical = true;
-    camControls.verticalMin = 1.0;
-    camControls.verticalMax = 2.0;
-    camControls.lon = -150;
-    camControls.lat = 120;
-}
 
 window.onload = function () {
     app = new t3d.App({
