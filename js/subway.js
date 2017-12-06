@@ -1,15 +1,25 @@
-var app,gui;
+var app,guiMd;
 var config = {
     outdoorProp:"outdoor",
     b1Prop:"b1",
     b2Prop:"b2",
     b3Prop:"b3",
     exitPropValue:"exit",
+    outdOffset:[-200,101,100],
+    builOffset:[80,101,-80],
     
     signBoard:"signboard_subway",
     
     mark_blue:"mark_blue",
     mark_yellow:"mark_yellow"
+}
+var treeB = {
+    name:"Building"
+}
+var treeF = {
+    0:{name:"B3"},
+    1:{name:"B2"},
+    2:{name:"B1"}
 }
 function init(c){
     this.outdoorProp=c.outdoorProp;
@@ -26,6 +36,12 @@ function init(c){
     this.b3ClassName=c.signBoard+" "+c.b3Prop;
     this.mark_blue=c.mark_blue;
     this.mark_yellow=c.mark_yellow;
+    this.outdOffset=c.outdOffset;
+    this.builOffset=c.builOffset;
+    
+    compasses.push(app.query('Compass01'));
+    compasses.push(app.query('Compass02'));
+    compasses.push(app.query('Compass03'));
 }
 
 window.onload = function () {
@@ -33,17 +49,24 @@ window.onload = function () {
         el: "div3d",
         skyBox:'SunCloud',
         url: "https://speech.uinnova.com/static/models/subway",
+        ak:'app_test_key',
         complete: function () {
             console.log("app scene loaded");
             init(config);
-            EnterOutdoor();
             guiFunction();
             CreatePanels();
             panelsAddListener();
+            EnterOutdoor();
+            AddTexture();
         }
     });
 }
-
+function AddTexture(){
+    var texture = new THREE.TextureLoader().load( "../images/momoda.png" );
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set( 4, 4 );
+}
 function CreatePanels() {
     /*belong的路径不能太具体，比如app.outdoors.things就不行了*/
     CreateExitPanels( GetThingsByProp(this.outdoorProp),this.mark_blue, " " + this.outdoorProp,"none");
@@ -53,54 +76,106 @@ function CreatePanels() {
 }
 
 /* 创建导航面板 */
-var full,b,f;
+var temp;
 function guiFunction() {
-    gui = new dat.gui.GUI({
-        type: 'nav1'
+    guiMd = new dat.gui.GUI({
+        type: 'nav-md1'
     });
-    gui.addTree(app, '全景');
-    gui.setPosition({left:5,top:200});
-    full = gui.getFullView();
-    b = gui.getBuildings();
-    f = gui.getFloors(b[0]);
-    
-    full.addEventListener("click",function () {
-        EnterOutdoor();
+    temp = app.tree;
+    Object.assign(temp.buildings[0],treeB);
+    for(var i=0;i<Object.keys(treeF).length;i++){
+        Object.assign(temp.buildings[0].floors[i],treeF[i]);
+    }
+    var f1 = guiMd.addAppTree('全景',temp);
+    var v1 = guiMd.addTree('View1');
+    var v2 = guiMd.addTree('View2');
+    guiMd.treeBind('click', function(o) {
+        if(o=='View1'){
+            ChangeBG(true);
+            ShowThisPanels(0);
+            ShowWhere(true,false);
+            app.camera.flyTo({
+                position: [30.34,79.36,-252.177],
+                target: [41.33, 2.63, -37.31],
+                time: 1000
+            });
+        }else if(o=='View2'){
+            ChangeBG(true);
+            ShowThisPanels(0);
+            ShowWhere(true,false);
+            app.camera.flyTo({
+                position: [112.54,120.58,144.88],
+                target: [41.34, 2.63, -37.31],
+                time: 1000
+            });
+        }else if(o=="全景"){
+            ChangeBG(true);
+            ShowWhere(true,false);
+            CameraFly(app.tree.outdoor.position,this.outdOffset);
+            ShowThisPanels(0);
+        }else{
+            EnterWhere(o);
+        }
     });
-    b[0].addEventListener("click",function () {
-        EnterBuilding();
-    });
-    b[1].addEventListener("click",function () {
-        EnterOutdoor();
-    });
-    f[0].addEventListener("click",function () {
-        EnterFloor(1);
-    });
-    f[1].addEventListener("click",function () {
-        EnterFloor(2);
-    });
-    f[2].addEventListener("click",function () {
-        EnterFloor(3);
-    });
+}
+var compasses = [];
+function ShowCompass(index) {
+    compasses.forEach(function (t) { t[0].show(false);console.log(t)});
+    index+=1;
+    console.log('Compass0'+index);
+    var a = app.query('Compass0'+index);
+    a[0].show(true);
+    console.log( a[0].visible);
+}
+function EnterWhere(obj) {
+    var offset;
+    HideRoofNode();
+    ShowOrHideObjects( app.tree.outdoor, false );
+    ShowOrHideObjects( app.tree.buildings[0].floors, false);
+    var isShowBG;
+    if(isContains(obj.name,"Building") || obj=="View2"){
+        isShowBG=false;
+        HideAllPanels();
+        ShowCompass(0);
+        ShowOrHideObjects( obj.floors, true);
+        offset=this.builOffset;
+    }else if(isContains(obj.name,"Outdoor")){
+        isShowBG=true;
+        ShowThisPanels(0);
+        ShowOrHideObjects( obj, true );
+        offset=this.outdOffset;
+    }else if(obj.hasOwnProperty('levelNum')){
+        isShowBG=false;
+        ShowThisFloor( app.tree.buildings[0].floors, obj.levelNum );
+        ShowThisPanels( obj.levelNum+1 );
+        // ShowCompass(obj.levelNum);
+        app.query('Compass01')[0].visible=true;
+        offset=this.builOffset;
+    }
+    ChangeBG(isShowBG);
+    CameraFly(obj.position,offset);
+}
+function CameraFly(tarPOS,offPOS) {
+    app.camera.flyTo({
+        position: [tarPOS[0]+offPOS[0], tarPOS[1]+offPOS[1], tarPOS[2]+offPOS[2]],
+        target: [tarPOS[0], tarPOS[1], tarPOS[2]],
+        time: 1000});
 }
 
 /* 隐藏房顶 */
 function HideRoofNode() {
-    ShowOrHideObjects( app.buildings[0].floors[0].roofNodes, false);
-    ShowOrHideObjects( app.buildings[0].floors[1].roofNodes, false);
-    ShowOrHideObjects( app.buildings[0].floors[2].roofNodes, false);
+    ShowOrHideObjects( app.buildings[0].floors[0].roofNode, false);
+    ShowOrHideObjects( app.buildings[0].floors[1].roofNode, false);
+    ShowOrHideObjects( app.buildings[0].floors[2].roofNode, false);
 }
 /* 所有牌子隐藏 */
 function HideAllPanels() {
-    var children = document.getElementsByTagName('*') || document.all;
-    for (var i = 0; i < children.length; i++) {
-        var child = children[i];
-        var classNames = child.className.split(' ');
-        for (var j = 0; j < classNames.length; j++) {
-            if (classNames[j] == this.signBoard) {
-                child.style.display = "none";
-                break;
-            }
+    var children = document.all;
+    for(var i=0;i<children.length;i++){
+        var child=children[i];
+        if(child.classList.contains('signboard_subway')){
+            // console.log(child.className);
+            child.style.display='none';
         }
     }
 }
@@ -114,20 +189,15 @@ function ShowThisPanels( number ) {
         case 3:PanelsByClassName( this.b1ClassName, "block");break;
     }
 }
-
 /* 根据 className 显隐 Panel */
 function PanelsByClassName( className, display ) {
-    
     var panels = document.getElementsByClassName( className );
-    
     for(var i = 0;i < panels.length; i++){
         panels[i].style.display = display;
     }
 }
-
 /* 创建 Panel */
 function CreateExitPanels( things, markID, className, display ) {
-    
     var panelEle = document.getElementById( markID );
     things.forEach(function (obj) {
         var panel = panelEle.cloneNode(true);
@@ -138,11 +208,9 @@ function CreateExitPanels( things, markID, className, display ) {
         panel.style.display = display;
         panel.className += className;
         panel.id += className;
-        app.create({
-            type: 'UI',
-            el: panel,
-            offset: [0, -150],
-            parent: obj});
+        var box = new THREE.Box3().setFromObject(obj.node);
+        obj.addUI(panel, [0, box.getSize().y, 0 ],[0.2,1]);
+        var result = app.camera.worldToScreen(obj.position);
     })
 }
 function subName( modelName ) {
@@ -158,87 +226,39 @@ function panelsAddListener() {
             EnterBuilding();
         })
     }
-    var view1 = document.getElementById( "view1" );
-    var view2 = document.getElementById( "view2" );
-    var view3 = document.getElementById( "view3" );
-    view1.addEventListener("click",function () {
-        EnterOutdoor();
-        app.camera.flyTo({
-            position: [30.34,79.36,-252.177],
-            target: [41.33, 2.63, -37.31],
-            time: 1000
-        });
-    });
-    view2.addEventListener("click",function () {
-        EnterBuilding();
-    });
-    view3.addEventListener("click",function () {
-        EnterOutdoor();
-        app.camera.flyTo({
-            position: [112.54,120.58,144.88],
-            target: [41.34, 2.63, -37.31],
-            time: 1000
-        });
-    });
 }
+function isContains(str, substr) {
+    // console.log(str);
+    return str.indexOf(substr) >= 0;
+}
+
 var bPOS,oPOS,fPOS;
 function EnterBuilding() {
     ChangeBG( false );
     // 进入地下，地上隐藏
     HideRoofNode();
     HideAllPanels();
-    ShowOrHideObjects( app.outdoors, false );
-    ShowOrHideObjects( app.buildings[0].floors, true);
-    bPOS = app.buildings[0].position;
-    app.camera.flyTo({
-        position: [bPOS[0]+80, bPOS[1]+101, bPOS[2]-80],
-        target: [bPOS[0],bPOS[1], bPOS[2]],
-        time: 1000
-    });
-    // app.camera.flyTo({target:app.buildings[0]});
-}
-function EnterFloor( number ) {
-    ChangeBG( false );
-    // 进入地下某层，地上隐藏
-    HideRoofNode();
-    ShowOrHideObjects( app.outdoors, false );
-    ShowThisFloor( app.buildings[0].floors, number - 1 );
-    ShowThisPanels( number );
-    fPOS = app.buildings[0].floors[number-1].position;
-    app.camera.flyTo({
-        position: [fPOS[0]+80, fPOS[1]+101+ number * 1, fPOS[2]-80],
-        target: [fPOS[0],fPOS[1], fPOS[2]],
-        time: 1000
-    });
-    // app.camera.flyTo({target:app.buildings[0].floors[number-1]});
+    ShowOrHideObjects( app.tree.outdoor, false );
+    ShowOrHideObjects( app.tree.buildings[0].floors, true);
+    ShowCompass(2);
 }
 
 function EnterOutdoor() {
     ChangeBG( true );
-    HideRoofNode();
     // 进入地上，地下隐藏
-    ShowOrHideObjects( app.outdoors, true );
-    ShowOrHideObjects( app.buildings[0].floors, false);
+    ShowOrHideObjects( app.tree.outdoor, true );
+    ShowOrHideObjects( app.tree.buildings[0].floors, false);
     ShowThisPanels(0);
-
-    oPOS = app.outdoors.position;
-    app.camera.flyTo({
-        position: [oPOS[0]-200, oPOS[1]+101, oPOS[2]+100],
-        target: [oPOS[0], oPOS[1], oPOS[2]],
-        time: 1000
-    });
-    // app.camera.flyTo({target:app.outdoors});
 }
 function ChangeBG( bSkyBox ) {
     if(bSkyBox){
         app.setSkyBox( "SunCloud" );
     }else{
-        app._real.scene.background = new THREE.Color( 0x00000000 );
+        app.background = new THREE.Color( 0x00000000 );
     }
 }
-
 // 显示/隐藏整体
-function ShowOrHideObjects(  objects, bShow ) {
+function ShowOrHideObjects( objects, bShow ) {
     
     if( isArray(objects) ){
         for(var i = 0;i < objects.length;i++) {
@@ -247,6 +267,14 @@ function ShowOrHideObjects(  objects, bShow ) {
     }else{
         objects.visible = bShow;
     }
+}
+function ShowWhere(outShow, buiShow,) {
+    ShowOrHideObjects( app.tree.outdoor, outShow );
+    ShowOrHideObjects( app.tree.buildings[0].floors, buiShow);
+}
+function ShowFloor(num) {
+    ShowOrHideObjects( app.tree.outdoor, false );
+    ShowThisFloor( app.tree.buildings[0].floors, number - 1 );
 }
 // 显示某层，绑在导航栏
 function ShowThisFloor( floors, number ) {
@@ -259,9 +287,6 @@ function isArray(o){
 }
 /* 得到属性名/属性值索引的数组 */
 function GetThingsByProp( propKey ) {
-    // console.log('[propKey='+prop+',propValue='+this.exitPropValue+']');
-    // var _things = app.query(/*'[propKey='+prop+']'*/{propKey:prop,propValue:this.exitPropValue}/*).query('[propValue='+this.exitPropValue+']'*/);
-    // console.log(app.query('['+propKey+'='+propValue+']'));
-    var _things = app.query('['+propKey+'='+this.exitPropValue+']')/*.query('[propValue='+this.exitPropValue+']')*/;
+    var _things = app.query('['+propKey+'='+this.exitPropValue+']');
     return _things;
 }
