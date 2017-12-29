@@ -7,6 +7,7 @@ var config = {
     exitPropValue:"exit",
     outdOffset:[-200,101,100],
     builOffset:[80,101,-80],
+    exitOffset:[0,30,-80],
     
     signBoard:"signboard_subway",
     
@@ -57,16 +58,16 @@ window.onload = function () {
             CreatePanels();
             panelsAddListener();
             EnterOutdoor();
-            AddTexture();
+            // AddTexture();
         }
     });
 }
-function AddTexture(){
-    var texture = new THREE.TextureLoader().load( "../images/momoda.png" );
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set( 4, 4 );
-}
+// function AddTexture(){
+//     var texture = new THREE.TextureLoader().load( "../images/momoda.png" );
+//     texture.wrapS = THREE.RepeatWrapping;
+//     texture.wrapT = THREE.RepeatWrapping;
+//     texture.repeat.set( 4, 4 );
+// }
 function CreatePanels() {
     /*belong的路径不能太具体，比如app.outdoors.things就不行了*/
     CreateExitPanels( GetThingsByProp(this.outdoorProp),this.mark_blue, " " + this.outdoorProp,"none");
@@ -81,6 +82,7 @@ function guiFunction() {
     guiMd = new dat.gui.GUI({
         type: 'nav-md1'
     });
+    guiMd.setPosition(0,null,null,0);
     temp = app.tree;
     Object.assign(temp.buildings[0],treeB);
     for(var i=0;i<Object.keys(treeF).length;i++){
@@ -89,7 +91,8 @@ function guiFunction() {
     var f1 = guiMd.addAppTree('全景',temp);
     var v1 = guiMd.addTree('View1');
     var v2 = guiMd.addTree('View2');
-    guiMd.treeBind('click', function(o) {
+    guiMd.treeBind('click', function(o,target) {
+        guiMd.highLight(target);
         if(o=='View1'){
             ChangeBG(true);
             ShowThisPanels(0);
@@ -120,12 +123,12 @@ function guiFunction() {
 }
 var compasses = [];
 function ShowCompass(index) {
-    compasses.forEach(function (t) { t[0].show(false);console.log(t)});
+    compasses.forEach(function (t) { t[0].show(false);/*console.log(t)*/});
     index+=1;
-    console.log('Compass0'+index);
+    // console.log('Compass0'+index);
     var a = app.query('Compass0'+index);
     a[0].show(true);
-    console.log( a[0].visible);
+    // console.log( a[0].visible);
 }
 function EnterWhere(obj) {
     var offset;
@@ -133,7 +136,7 @@ function EnterWhere(obj) {
     ShowOrHideObjects( app.tree.outdoor, false );
     ShowOrHideObjects( app.tree.buildings[0].floors, false);
     var isShowBG;
-    if(isContains(obj.name,"Building") || obj=="View2"){
+    if(isContains(obj.name,"Building")){
         isShowBG=false;
         HideAllPanels();
         ShowCompass(0);
@@ -145,11 +148,12 @@ function EnterWhere(obj) {
         ShowOrHideObjects( obj, true );
         offset=this.outdOffset;
     }else if(obj.hasOwnProperty('levelNum')){
+        guiMd.pathHighLight('全景.Building.'+obj.name);
         isShowBG=false;
         ShowThisFloor( app.tree.buildings[0].floors, obj.levelNum );
         ShowThisPanels( obj.levelNum+1 );
         // ShowCompass(obj.levelNum);
-        app.query('Compass01')[0].visible=true;
+        app.query('Compass0' + (3-obj.levelNum).toString())[0].visible=true;
         offset=this.builOffset;
     }
     ChangeBG(isShowBG);
@@ -159,7 +163,7 @@ function CameraFly(tarPOS,offPOS) {
     app.camera.flyTo({
         position: [tarPOS[0]+offPOS[0], tarPOS[1]+offPOS[1], tarPOS[2]+offPOS[2]],
         target: [tarPOS[0], tarPOS[1], tarPOS[2]],
-        time: 1000});
+        time: 2000});
 }
 
 /* 隐藏房顶 */
@@ -167,6 +171,10 @@ function HideRoofNode() {
     ShowOrHideObjects( app.buildings[0].floors[0].roofNode, false);
     ShowOrHideObjects( app.buildings[0].floors[1].roofNode, false);
     ShowOrHideObjects( app.buildings[0].floors[2].roofNode, false);
+    // 有一些房顶没算在roofNode里
+    app.buildings[0].floors[2].node.children[2].visible=false;
+    app.buildings[0].floors[1].node.children[2].visible=false;
+    app.buildings[0].floors[0].node.children[2].visible=false;
 }
 /* 所有牌子隐藏 */
 function HideAllPanels() {
@@ -201,11 +209,16 @@ function CreateExitPanels( things, markID, className, display ) {
     var panelEle = document.getElementById( markID );
     things.forEach(function (obj) {
         var panel = panelEle.cloneNode(true);
-        var text = panel.children[1];
-        text.innerHTML = subName(obj.name);
+        var text = panel.children[0];
+        if(obj.name.indexOf("Entrance") > -1){
+            text.innerHTML = "Entrance";
+        }else{
+            text.innerHTML = subName(obj.name);
+        }
         text.style.fontSize = 8 + 'px';
-        document.body.insertBefore(panel, panelEle);
+        document.getElementById("div3d").insertBefore(panel, panelEle);
         panel.style.display = display;
+        panel.style.zIndex = 10;
         panel.className += className;
         panel.id += className;
         var box = new THREE.Box3().setFromObject(obj.node);
@@ -216,14 +229,27 @@ function CreateExitPanels( things, markID, className, display ) {
 function subName( modelName ) {
     var index = modelName.indexOf('_');
     modelName = modelName.substr(index+1);
-    return modelName;s
+    return modelName;
 }
 function panelsAddListener() {
-    var panels = document.getElementsByClassName( this.outdoorClassName);
+    var panels_parent = document.getElementsByClassName( this.outdoorClassName);
+    var panels = [];
+    for(var i = 0; i < panels_parent.length; i++){
+        panels.push(panels_parent[i].children[0]);
+    }
     for (var i = 0; i < panels.length; i++){
+        
         panels[i].addEventListener("click",function () {
             PanelsByClassName(this.outdoorClassName,"none");
-            EnterBuilding();
+            ShowCompass(0);
+            // 进入地下，地上隐藏
+            HideRoofNode();
+            HideAllPanels();
+            ShowOrHideObjects( app.tree.outdoor, false );
+            ShowOrHideObjects( app.tree.buildings[0].floors, true);
+            ChangeBG(false);
+            var pos = app.query("b1_"+this.innerHTML)[0].position;
+            CameraFly(pos,config.exitOffset);
         })
     }
 }
@@ -231,18 +257,6 @@ function isContains(str, substr) {
     // console.log(str);
     return str.indexOf(substr) >= 0;
 }
-
-var bPOS,oPOS,fPOS;
-function EnterBuilding() {
-    ChangeBG( false );
-    // 进入地下，地上隐藏
-    HideRoofNode();
-    HideAllPanels();
-    ShowOrHideObjects( app.tree.outdoor, false );
-    ShowOrHideObjects( app.tree.buildings[0].floors, true);
-    ShowCompass(2);
-}
-
 function EnterOutdoor() {
     ChangeBG( true );
     // 进入地上，地下隐藏
