@@ -50,7 +50,7 @@ window.onload = function () {
         el: "div3d",
         skyBox:'SunCloud',
         // url: "https://speech.uinnova.com/static/models/subway",
-        url: "http://uinnova-model.oss-cn-beijing.aliyuncs.com/scenes/subway",
+        url: "https://uinnova-model.oss-cn-beijing.aliyuncs.com/scenes/subway",
         ak:'app_test_key',
         complete: function () {
             console.log("app scene loaded");
