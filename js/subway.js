@@ -60,6 +60,8 @@ window.onload = function () {
             panelsAddListener();
             EnterOutdoor();
             // AddTexture();
+            // 引导提示
+            startIntro(subwaySteps, 'folder');
         }
     });
 }
