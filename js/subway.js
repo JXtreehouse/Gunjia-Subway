@@ -61,7 +61,7 @@ window.onload = function () {
             EnterOutdoor();
             // AddTexture();
             // 引导提示
-            startIntro(subwaySteps, 'folder');
+            startIntro(subwaySteps);
         }
     });
 }
