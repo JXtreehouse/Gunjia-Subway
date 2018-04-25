@@ -86,7 +86,7 @@ function guiFunction() {
         type: 'nav-md1'
     });
     guiMd.setPosition(0,null,null,0);
-    temp = app.tree;
+    temp = app;
     Object.assign(temp.buildings[0],treeB);
     for(var i=0;i<Object.keys(treeF).length;i++){
         Object.assign(temp.buildings[0].floors[i],treeF[i]);
@@ -117,7 +117,7 @@ function guiFunction() {
         }else if(o=="全景"){
             ChangeBG(true);
             ShowWhere(true,false);
-            CameraFly(app.tree.outdoor.position,this.outdOffset);
+            CameraFly(app.outdoors.position,this.outdOffset);
             ShowThisPanels(0);
         }else{
             EnterWhere(o);
@@ -136,8 +136,8 @@ function ShowCompass(index) {
 function EnterWhere(obj) {
     var offset;
     HideRoofNode();
-    ShowOrHideObjects( app.tree.outdoor, false );
-    ShowOrHideObjects( app.tree.buildings[0].floors, false);
+    ShowOrHideObjects( app.outdoors, false );
+    ShowOrHideObjects( app.buildings[0].floors, false);
     var isShowBG;
     if(isContains(obj.name,"Building")){
         isShowBG=false;
@@ -153,7 +153,7 @@ function EnterWhere(obj) {
     }else if(obj.hasOwnProperty('levelNum')){
         guiMd.pathHighLight('全景.Building.'+obj.name);
         isShowBG=false;
-        ShowThisFloor( app.tree.buildings[0].floors, obj.levelNum );
+        ShowThisFloor( app.buildings[0].floors, obj.levelNum );
         ShowThisPanels( obj.levelNum+1 );
         // ShowCompass(obj.levelNum);
         app.query('Compass0' + (3-obj.levelNum).toString())[0].visible=true;
@@ -175,9 +175,9 @@ function HideRoofNode() {
     ShowOrHideObjects( app.buildings[0].floors[1].roofNode, false);
     ShowOrHideObjects( app.buildings[0].floors[2].roofNode, false);
     // 有一些房顶没算在roofNode里
-    app.buildings[0].floors[2].node.children[2].visible=false;
-    app.buildings[0].floors[1].node.children[2].visible=false;
-    app.buildings[0].floors[0].node.children[2].visible=false;
+    // app.buildings[0].floors[2].node.children[2].visible=false;
+    // app.buildings[0].floors[1].node.children[2].visible=false;
+    // app.buildings[0].floors[0].node.children[2].visible=false;
 }
 /* 所有牌子隐藏 */
 function HideAllPanels() {
@@ -224,8 +224,15 @@ function CreateExitPanels( things, markID, className, display ) {
         panel.style.zIndex = 10;
         panel.className += className;
         panel.id += className;
-        var box = new THREE.Box3().setFromObject(obj.node);
-        obj.addUI(panel, [0, box.getSize().y, 0 ],[0.2,1]);
+        // var box = new THREE.Box3().setFromObject(obj.node);
+        // obj.addUI(panel, [0, box.getSize().y, 0 ],[0.2,1]);
+        app.create({
+            type:"UI",
+            el:panel,
+            parent:obj,
+            offset:[0,0,0],
+            pivot:[0.2,1]
+        })
         var result = app.camera.worldToScreen(obj.position);
     })
 }
@@ -248,8 +255,8 @@ function panelsAddListener() {
             // 进入地下，地上隐藏
             HideRoofNode();
             HideAllPanels();
-            ShowOrHideObjects( app.tree.outdoor, false );
-            ShowOrHideObjects( app.tree.buildings[0].floors, true);
+            ShowOrHideObjects( app.outdoors, false );
+            ShowOrHideObjects( app.buildings[0].floors, true);
             ChangeBG(false);
             var pos = app.query("b1_"+this.innerHTML)[0].position;
             CameraFly(pos,config.exitOffset);
@@ -263,13 +270,13 @@ function isContains(str, substr) {
 function EnterOutdoor() {
     ChangeBG( true );
     // 进入地上，地下隐藏
-    ShowOrHideObjects( app.tree.outdoor, true );
-    ShowOrHideObjects( app.tree.buildings[0].floors, false);
+    ShowOrHideObjects( app.outdoors, true );
+    ShowOrHideObjects( app.buildings[0].floors, false);
     ShowThisPanels(0);
 }
 function ChangeBG( bSkyBox ) {
     if(bSkyBox){
-        app.setSkyBox( "SunCloud" );
+        app.skyBox = "SunCloud";
     }else{
         app.background = new THREE.Color( 0x00000000 );
     }
@@ -286,12 +293,12 @@ function ShowOrHideObjects( objects, bShow ) {
     }
 }
 function ShowWhere(outShow, buiShow,) {
-    ShowOrHideObjects( app.tree.outdoor, outShow );
-    ShowOrHideObjects( app.tree.buildings[0].floors, buiShow);
+    ShowOrHideObjects( app.outdoors, outShow );
+    ShowOrHideObjects( app.buildings[0].floors, buiShow);
 }
 function ShowFloor(num) {
-    ShowOrHideObjects( app.tree.outdoor, false );
-    ShowThisFloor( app.tree.buildings[0].floors, number - 1 );
+    ShowOrHideObjects( app.outdoors, false );
+    ShowThisFloor( app.buildings[0].floors, number - 1 );
 }
 // 显示某层，绑在导航栏
 function ShowThisFloor( floors, number ) {
